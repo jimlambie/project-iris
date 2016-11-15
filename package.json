@@ -4,11 +4,12 @@
   "description": "Iris",
   "version": "0.0.1",
   "engines": {
-    "node": "~>0.10.x"
+    "node": "4.6.x"
   },
   "dependencies": {
     "express": "~>4.13.4",
-    "gun": "~>0.3.0"
+    "gun": "~>0.3.0",
+    "jquery": "latest"
   },
   "scripts": {
     "start": "node express.js",
