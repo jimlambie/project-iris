@@ -4,6 +4,8 @@
   <script src="../node_modules/jquery/dist/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/3.3.4/underscore.string.min.js"></script>
+  <link href="alloy-editor/assets/alloy-editor-ocean-min.css" rel="stylesheet">
+  <script src="alloy-editor/alloy-editor-all-min.js"></script>
   <style>
   #container3 {
     float:left;
@@ -86,6 +88,7 @@
               o[this.name] = this.value || '';
           }
       });
+
       return o;
       };
     })(jQuery);
@@ -171,6 +174,8 @@
         //$("#documents").html(html) // set the HTML to our new list.
       })
 
+      var editor
+
       $("#new").on('click', function() {
         var $html = $("<form id='newDocument'><input id='id' type='hidden'/>H1 <input type='text' id='title' name='title'></input></form>")
 
@@ -181,12 +186,24 @@
         $title.keypress(function( event ) {
           if ( event.which == 13 ) {
             event.preventDefault();
-            $('#newDocument').append($('<br>CONTENT <textarea id="content" name="content"></textarea>'))
+            $('#newDocument').append($('<br>CONTENT <div contenteditable="true" id="content" name="content"></div>'))
 
             $content = $('#newDocument #content')
-            $content.keypress(function (event) {
-              $content.attr('changed', 'true')
-            })
+
+            editor = AlloyEditor.editable('content')
+            console.log(editor.get('nativeEditor'))
+            editor.get('nativeEditor').on( 'contentDom', function() {
+              var editable = editor.get('nativeEditor').editable();
+              editable.attachListener( editable, 'keypress', function (e) {
+               //console.log(e)
+               $content.attr('changed', 'true')
+              });
+              //console.log()
+            });
+
+            // $content.keypress(function (event) {
+            //   $content.attr('changed', 'true')
+            // })
 
             $content.focus()
           }
@@ -194,6 +211,9 @@
 
         setInterval(function() {
           var data = $('#newDocument').serializeFormJSON()
+          data.content = editor.get('nativeEditor').getData()
+          console.log('data')
+          console.log(data)
 
           if (!data.content) {
             return
