@@ -1,0 +1,85 @@
+<html>
+<head>
+  <script src="../../gun.js"></script>
+  <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/3.3.4/underscore.string.min.js"></script>
+</head>
+<body>
+  <ul id="collections"></ul>
+  <ul id="documents"></ul>
+  <div id="document">
+    <h1 id="title"></h1>
+    <div id="content"></content>
+  </div>
+
+  <script>
+
+  var gun
+  var collections
+  var documents
+
+    $(document).ready(function() {
+      gun = Gun(location.origin + '/gun')
+
+      collections = gun.get('collections')
+      documents = gun.get('editor/documents')
+
+      collections.on().map(function (item, id) { // subscribe and listen to all updates on the collections.
+        if (id.substring(0,1) !== '#') {
+          //console.log(item, id)
+          id = id.replace(/\//g, '-')
+          try {
+            var $parent = $('#' + id.toString()).get(0) || $('<li>').attr('id', id).appendTo('#collections')
+            //var $li = $('<li></li>')
+            $parent.html('<a href="#' + id + '">' + item.title + '</a>')
+            //$parent.text(item.title + 'x')
+            //$('#collections').append($li)
+            if (item.children) {
+              //console.log(item.children)
+              $parent.append('<ul></ul>')
+              gun.get(item.children).map().val(function (val) {
+                console.log(val)
+                $parent.find('ul').append('<li><a href="#' + val._['#'] + '">' + val.title + '</a></li>')
+              })
+            }
+
+            $parent.find('a').on('click', function (event) {
+              event.preventDefault()
+              //console.log(event)
+              var $this = $(this)
+              var authorId = $this.attr('href').substring(1)
+              $('#documents').html('')
+              collections.get(authorId).path('documents').map().val(function (doc) {
+                console.log(doc)
+                var $doc = $('<li></li>')
+                $doc.append('<a href="#' + doc._['#'] + '">' + doc.title + '</a>')
+                $doc.find('a').on('click', function (event) {
+                  event.preventDefault()
+                  var $this = $(this)
+                  var docId = $this.attr('href').substring(1)
+                  documents.get(docId).map().val(function (value, field) {
+                    $('#document #' + field).html(value)
+                  })
+                })
+
+                $('#documents').append($doc)
+              })
+            })
+          } catch (err) {
+
+          }
+        }
+      })
+
+      documents.on().map().val(function (item, id) { // subscribe and listen to all updates on the documents.
+        if (item.title !== '') {
+          var li = $('#' + id.toString()).get(0) || $('<li>').attr('id', id).text(item.title).appendTo('#documents')
+        }
+      })
+    })
+
+    // #([\w\/]*)[\s]{1}?([\w\/]*(?=#))?
+  </script>
+</body>
+</html>

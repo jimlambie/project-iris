@@ -1,0 +1,307 @@
+<html>
+<head>
+  <script src="../../gun.js"></script>
+  <script src="../node_modules/jquery/dist/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.string/3.3.4/underscore.string.min.js"></script>
+  <style>
+  #container3 {
+    float:left;
+    width:100%;
+    background:green;
+    overflow:hidden;
+    position:relative;
+  }
+  #container2 {
+    float:left;
+    width:100%;
+    background:yellow;
+    position:relative;
+    right:30%;
+  }
+  #container1 {
+    float:left;
+    width:100%;
+    background:red;
+    position:relative;
+    right:40%;
+  }
+  #col1 {
+    float:left;
+    width:26%;
+    position:relative;
+    left:72%;
+    overflow:hidden;
+  }
+  #col2 {
+    float:left;
+    width:36%;
+    position:relative;
+    left:76%;
+    overflow:hidden;
+  }
+  #col3 {
+    float:left;
+    width:26%;
+    position:relative;
+    left:80%;
+    overflow:hidden;
+  }
+  </style>
+</head>
+<body>
+  <form id="add"><input id="collection"/><button>Add</button></form>
+  <button id="new">New</button>
+  <div id="container3">
+    <div id="container2">
+      <div id="container1">
+        <div id="col1">
+          <ul id="collections"></ul>
+        </div>
+        <div id="col2">
+          <ul id="documents"></ul>
+        </div>
+        <div id="col3">Column 3</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+
+  var gun
+  var collections
+  var documents
+
+  (function ($) {
+    $.fn.serializeFormJSON = function () {
+      var o = {};
+      var a = this.serializeArray();
+      $.each(a, function () {
+          if (o[this.name]) {
+              if (!o[this.name].push) {
+                  o[this.name] = [o[this.name]];
+              }
+              o[this.name].push(this.value || '');
+          } else {
+              o[this.name] = this.value || '';
+          }
+      });
+      return o;
+      };
+    })(jQuery);
+    $(document).ready(function() {
+      gun = Gun(location.origin + '/gun')
+
+      //var gun = Gun()
+      var bob = gun.get('bob').put({name: 'Bob'})
+      var dave = gun.get('dave').put({name: 'Dave'})
+      dave.path('friends').set(bob)
+      bob.path('friends').set(dave)
+
+      // var collection = { key: 'author' }
+      // var document = { key: 'ernest-hemingway' }
+      // gun.get('collections/' + collection.key).put(collection)
+      // gun.get('collections/' + collection.key).path('documents').set(document)
+      // var currentDocument = gun.get('document/old-man-and-the-sea').put({ title: 'Old Man and the Sea' })
+      // gun.get('author/ernest-hemingway').path('documents').set(currentDocument)
+
+      gun.get('author/ernest-hemingway').path('documents').map().val(function(val) {
+        console.log(val)
+      })
+
+      collections = gun.get('collections')
+      documents = gun.get('editor/documents')
+
+      $("#add").on('submit', function() {
+        collections.path(Gun.text.random()).put($("#collection").val()) // add the HTML input's value to a random ID in the todo.
+        $("#collection").val("") // clear out the input's value so we can add more.
+        return false // prevent the browser from reloading.
+      })
+
+      collections.on().map(function (item, id) { // subscribe and listen to all updates on the collections.
+        if (id.substring(0,1) !== '#') {
+          //console.log(item, id)
+          id = id.replace(/\//g, '-')
+          try {
+            var $li = $('#' + id.toString()).get(0) || $('<li>').attr('id', id).appendTo('#collections')
+            $li.text(item.title)
+            if (item.children) {
+              console.log(item.children)
+              gun.get(item.children).map().val(function(val) {
+                console.log(val)
+                $li.append('<ul><li><a href="#' + val._['#'] + '">' + val.title + '</a></li></ul>')
+                $li.find('a').on('click', function(event) {
+                  event.preventDefault()
+                  //console.log(event)
+                  var $this = $(this)
+                  var authorId = $this.attr('href').substring(1)
+                  $('#documents').html('')
+                  collections.get(authorId).path('documents').map().val(function(doc) {
+                    console.log(doc)
+                    var $doc = $('<li></li>')
+                    $doc.attr('id', doc._['#'].toString())
+                    $doc.text(doc.title)
+                    $('#documents').append($doc)
+                  })
+                })
+              })
+            }
+          } catch (err) {
+
+          }
+        }
+        // var html = ''
+        // for (field in list) { // iterate over the list to generate the HTML.
+        //   if (!list[field] || field === Gun._.meta) continue // ignore nulled out values and metadata.
+        //   html += '<li>' + list[field] + '</li>'
+        // }
+        // $("#collections").html(html) // set the HTML to our new list.
+      })
+
+      documents.on().map(function (item, id) { // subscribe and listen to all updates on the documents.
+        //var html = ''
+        //for (field in list) { // iterate over the list to generate the HTML.
+          //if (!list[field] || field === Gun._.meta) continue // ignore nulled out values and metadata.
+          //documents.map(function (doc, key) {
+            // console.log(doc)
+            // if (doc.title !== '') {
+            //   html += '<li><a href="' + key + '">' + doc.title + '</a></li>'
+            // }
+          //})
+        //$("#documents").html(html) // set the HTML to our new list.
+      })
+
+      $("#new").on('click', function() {
+        var $html = $("<form id='newDocument'><input id='id' type='hidden'/>H1 <input type='text' id='title' name='title'></input></form>")
+
+        $("#col3").html($html)
+        $("#col3 #title").focus()
+
+        $title = $('#newDocument #title')
+        $title.keypress(function( event ) {
+          if ( event.which == 13 ) {
+            event.preventDefault();
+            $('#newDocument').append($('<br>CONTENT <textarea id="content" name="content"></textarea>'))
+
+            $content = $('#newDocument #content')
+            $content.keypress(function (event) {
+              $content.attr('changed', 'true')
+            })
+
+            $content.focus()
+          }
+        })
+
+        setInterval(function() {
+          var data = $('#newDocument').serializeFormJSON()
+
+          if (!data.content) {
+            return
+          }
+
+          var id = $('#newDocument #id').val()
+          // console.log(id)
+          // console.log(data)
+          if (id !== '' && id !== undefined) {
+            id = $('#newDocument #id').val()
+          } else {
+            id = Gun.text.random()
+            $('#newDocument #id').val(id)
+          }
+
+          var document = documents.get(id)
+
+          if ($content.attr('changed') === 'true') {
+            document.put(data)
+            $content.attr('changed', 'false')
+
+            // parse content to check for new tags
+            if (data.content) {
+              insertTags(data.content, id)
+            }
+          }
+        }, 1000)
+      })
+    })
+
+    function insertTags(str, docId) {
+      var regex = /#(.*?)#/gmi
+      var m
+
+      while ((m = regex.exec(str)) !== null) {
+        // This is necessary to avoid infinite loops with zero-width matches
+        if (m.index === regex.lastIndex) {
+          regex.lastIndex++
+        }
+
+        // The result can be accessed through the `m`-variable.
+        m.forEach((match, groupIndex) => {
+          if (groupIndex === 1) {
+            // console.log(groupIndex, match)
+            var tags = match.split(' ')
+            var len = tags.length
+            var i = 0
+
+            for(i; i < len; i++) {
+              var child
+              var tagId
+              var childId
+              if (tags[i].indexOf('/') > -1) {
+                var parts = tags[i].split('/')
+                tagId = parts[0]
+                childId = parts[1]
+              } else {
+                tagId = tags[i]
+              }
+
+              var tag = gun.get(tagId).put({
+                title: tagId,
+                documents: null
+              })
+
+              if (childId) {
+                child = gun.get(tagId + '-' + childId).put({
+                  title: childId,
+                  parent: null,
+                  documents: null
+                })
+              }
+
+              console.log(tag)
+              console.log(child)
+
+              console.log('set child to tag')
+
+              if (child) {
+                tag.path('children').set(child)
+                console.log('put parent')
+                child.path('parent').put(tag)
+              }
+
+              collections.set(tag)
+              //if (collections.not(tags[i])) {
+              //  var tagObj =
+
+                //tagObj.documents.push(doc)
+                //var tagId = tags[i]
+                var doc = documents.get(docId)
+
+                console.log('set document to tag.documents')
+                //collections.set(tagObj)
+                tag.path('documents').set(doc)
+
+                if (child) {
+                  console.log('set document to tag.child.documents')
+                  child.path('documents').set(doc)
+                }
+              //}
+            }
+          }
+        })
+      }
+    }
+
+    // #([\w\/]*)[\s]{1}?([\w\/]*(?=#))?
+  </script>
+</body>
+</html>

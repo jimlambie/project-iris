@@ -1,0 +1,17 @@
+{
+  "name": "iris",
+  "main": "express.js",
+  "description": "Iris",
+  "version": "0.0.1",
+  "engines": {
+    "node": "~>0.10.x"
+  },
+  "dependencies": {
+    "express": "~>4.13.4",
+    "gun": "~>0.3.0"
+  },
+  "scripts": {
+    "start": "node express.js",
+    "test": "mocha"
+  }
+}
